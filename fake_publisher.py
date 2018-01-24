@@ -17,7 +17,7 @@ def df_filter_timestamp(bottom, top):
     return df_lenfila[(df_lenfila["Timestamp"] >= bottom) & (df_lenfila["Timestamp"] < top)]
 
 def send_mqtt(base):
-    data = base[["Checkpoint 1", "Timestamp"]].values
+    data = base[["Checkpoint 1", "MAC"]].values
     str_data = [",".join([str(value) for value in row]) for row in data]
     for row in str_data:
         result = client.publish("hello", row)
