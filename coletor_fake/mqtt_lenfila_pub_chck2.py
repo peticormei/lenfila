@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 
 fieldnames = None
 
-client = mqtt.Client("lenPub")
-client.connect("172.16.207.12", 1883)
+client = mqtt.Client("lenFilaPub2")
+client.connect("localhost", 1883)
 
 def string_to_datetime(string):
     timestamp = datetime.strptime(string, "%I:%M:%S %p")
@@ -21,8 +21,8 @@ def send_mqtt(base):
     data = base[["Checkpoint", "MAC"]].values
     str_data = [",".join([str(value) for value in row]) for row in data]
     for row in str_data:
-        result = client.publish("bye", row)
-        print("Dado enviado:", row)
+        result = client.publish("checkPoint1", "2," + row)
+        print("Dado enviado:", "2," + row)
 
 df_lenfila = pd.read_csv("dataset_checkpoint2.csv")
 df_lenfila["Timestamp"] = df_lenfila["Timestamp"].apply(string_to_datetime)
@@ -38,6 +38,7 @@ df_filtered = df_filter_timestamp(bottom_base, top_base)
 signal = df_filtered.copy(deep=True)
 signal.sort_values("Checkpoint")
 print(signal.values[0], signal.values[-1])
+
 while not df_filtered.empty:
     print("\nEnviando dados")
     send_mqtt(df_filtered)
