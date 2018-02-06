@@ -21,7 +21,7 @@ def send_mqtt(base):
     data = base[["Checkpoint", "MAC"]].values
     str_data = [",".join([str(value) for value in row]) for row in data]
     for row in str_data:
-        result = client.publish("checkPoint1", "2," + row)
+        result = client.publish("coletor", "2," + row)
         print("Dado enviado:", "2," + row)
 
 df_lenfila = pd.read_csv("dataset_checkpoint2.csv")
