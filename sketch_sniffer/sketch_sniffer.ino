@@ -16,8 +16,9 @@ extern "C" {
 static os_timer_t channelHop_timer;
 static int tempo_passado = 0;
 static int num_pacotes_coletados = 0;
+char buffer_pacotes[200][25];
 
-const char* mqtt_broker = "192.168.43.141";
+const char* mqtt_broker = "192.168.0.105";
 WiFiClient espClient;
 PubSubClient client(espClient);
 
@@ -73,8 +74,9 @@ static void showMetadata(SnifferPacket *snifferPacket) {
       frameSubType != SUBTYPE_PROBE_REQUEST)
         return;
 
+  String rssi = String(snifferPacket->rx_ctrl.rssi);
   Serial.print("RSSI: ");
-  Serial.print(snifferPacket->rx_ctrl.rssi, DEC);
+  Serial.print(rssi);
 
   Serial.print(" Ch: ");
   Serial.print(wifi_get_channel());
@@ -90,6 +92,21 @@ static void showMetadata(SnifferPacket *snifferPacket) {
 
   Serial.println();
 
+  int qtdDigitos = rssi.length() - 1;
+  int repeticoes = 3 - qtdDigitos;
+  
+  String rssi_final = rssi.substring(1);
+    
+  for(int i=0; i < repeticoes; i++){
+    rssi_final = "0" + rssi_final;
+    }
+  rssi_final = "-" + rssi_final;
+
+  String pacote_str = "1," + rssi_final + "," + addr;
+  char pacote_array[25];
+  pacote_str.toCharArray(pacote_array,25);
+  
+  snprintf(buffer_pacotes[num_pacotes_coletados], 25, "%s", pacote_array);
   num_pacotes_coletados ++;
 }
 
@@ -177,23 +194,19 @@ void coletar_pacotes(bool modo){
 void publica_pacotes_coletados(){
   
   Serial.print("Conectando com o broker MQTT... ");
-  client.connect("ESP8266Client","vhost_lenfila:jonathan","123456");
+  client.connect("ESP8266Client");
   if (client.connected()) {
     Serial.println("Conectado");
   }
 
-  String num_pacotes_str = "Foram coletados ";
-  num_pacotes_str += num_pacotes_coletados;
-  num_pacotes_str += " pacotes.";
+  for(int indice = 0; indice < num_pacotes_coletados; indice++){
+    
+    Serial.print("Publish message: ");
+    Serial.println(buffer_pacotes[indice]);
   
-  int num_pacotes_tamanho = num_pacotes_str.length();
-  char num_pacotes_array[num_pacotes_tamanho];
-  num_pacotes_str.toCharArray(num_pacotes_array, num_pacotes_tamanho);
-
-  Serial.print("Publish message: ");
-  Serial.println(num_pacotes_array);
-  
-  client.publish("outTopic", num_pacotes_array);
+    client.publish("coletor", buffer_pacotes[indice]);
+    
+  } 
   
   Serial.print("Disconectando do broker...");
   client.disconnect();
@@ -228,9 +241,11 @@ void setup() {
 void loop() {
   
   Serial.print(tempo_passado);
-  Serial.println(" segundos de coleta.");
+  Serial.print(" segundos de coleta, ");
+  Serial.print(num_pacotes_coletados);
+  Serial.println(" pacotes coletados.");
   
-  if(tempo_passado > 29){
+  if(tempo_passado > 29 || num_pacotes_coletados > 199){
     coletar_pacotes(DISABLE);
     Serial.println("Coleta pausada.");
     
@@ -245,11 +260,11 @@ void loop() {
     Serial.println("Coleta retomada");
     
     tempo_passado = 0;
+    num_pacotes_coletados = 0;
     }
    delay(1000);
 }
 
 /*
- * buffer de pacotes coletados
  * conexão em rede com usuário e senha, vide: https://www.hallgeirholien.no/post/esp8266-eap/
  */
