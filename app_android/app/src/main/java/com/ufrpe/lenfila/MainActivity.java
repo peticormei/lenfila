@@ -19,6 +19,8 @@ import com.android.volley.toolbox.Volley;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.Format;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
@@ -37,48 +39,13 @@ public class MainActivity extends AppCompatActivity {
         textView = (TextView)findViewById(R.id.txt);
         progressBar = (ProgressBar) findViewById(R.id.progressBar2);
 
-        //textView.setText(serverUrl);
+        callByJsonObject();
 
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final RequestQueue requestQueue = Volley.newRequestQueue(MainActivity.this);
-                JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, serverUrl,
-                        new Response.Listener<JSONObject>() {
-                            @Override
-                            public void onResponse(JSONObject response) {
-                                String resposta = response.toString();
+                callByJsonObject();
 
-                                try {
-                                    JSONObject json = response.getJSONObject("tamanhoAtual");
-                                    long timestamp = json.getLong("timestamp");
-                                    Date d = new Date(timestamp );
-                                    String dateformat = d.toString();
-                                    textView.setText(dateformat);
-                                    int checkponit = json.getInt("checkpointAtingido");
-                                    int status = checkCheckpoint(checkponit);
-                                    progressBar.setProgress(status);
-
-                                } catch (JSONException e) {
-                                    Toast.makeText(MainActivity.this, e.toString(), Toast.LENGTH_SHORT).show();
-                                    e.printStackTrace();
-                                }
-
-
-
-                                Toast.makeText(MainActivity.this, resposta, Toast.LENGTH_LONG).show();
-                                requestQueue.stop();
-                            }
-                        }, new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        String resposta = error.toString();
-                        Toast.makeText(MainActivity.this, resposta, Toast.LENGTH_LONG).show();
-                        error.printStackTrace();
-                        requestQueue.stop();
-                    }
-                });
-                requestQueue.add(jsonObjectRequest);
             }
         });
     }
@@ -91,6 +58,50 @@ public class MainActivity extends AppCompatActivity {
         }else{
             return 100;
         }
+
+    }
+
+    public void callByJsonObject(){
+        final RequestQueue requestQueue = Volley.newRequestQueue(MainActivity.this);
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, serverUrl,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        String resposta = response.toString();
+
+                        try {
+                            JSONObject json = response.getJSONObject("tamanhoAtual");
+                            long timestamp = json.getLong("timestamp");
+                            Date d = new Date(timestamp *1000L);
+                            Format formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+                            String dateformat = formatter.format(d);
+
+
+                            textView.setText("Ultima atualizacao: " + dateformat);
+                            int checkponit = json.getInt("checkpointAtingido");
+                            int status = checkCheckpoint(checkponit);
+                            progressBar.setProgress(status);
+
+                        } catch (JSONException e) {
+                            Toast.makeText(MainActivity.this, e.toString(), Toast.LENGTH_SHORT).show();
+                            e.printStackTrace();
+                        }
+
+
+
+                        Toast.makeText(MainActivity.this, resposta, Toast.LENGTH_LONG).show();
+                        requestQueue.stop();
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                String resposta = error.toString();
+                Toast.makeText(MainActivity.this, resposta, Toast.LENGTH_LONG).show();
+                error.printStackTrace();
+                requestQueue.stop();
+            }
+        });
+        requestQueue.add(jsonObjectRequest);
 
     }
 }
